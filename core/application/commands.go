@@ -36,7 +36,7 @@ func (a *app) CreateMicroVM(ctx context.Context, mvm *models.MicroVM) (*models.M
 	if validErr := validator.ValidateStruct(mvm); validErr != nil {
 		return nil, fmt.Errorf("an error occurred when attempting to validate microvm spec: %w", validErr)
 	}
-
+	
 	if mvm.ID.IsEmpty() {
 		name, err := a.ports.IdentifierService.GenerateRandom()
 		if err != nil {
@@ -91,6 +91,13 @@ func (a *app) CreateMicroVM(ctx context.Context, mvm *models.MicroVM) (*models.M
 		for _, netInt := range mvm.Spec.NetworkInterfaces {
 			if netInt.Type == models.IfaceTypeMacvtap {
 				return nil, errMacvtapNotSupported
+			}
+		}
+	}
+	if !provider.Capabilities().Has(models.VirtioFSCapability) {
+		for _, volume := range mvm.Spec.AdditionalVolumes {
+			if volume.Source.VirtioFS != nil {
+				return nil, errVirtioFSNotSupported
 			}
 		}
 	}
